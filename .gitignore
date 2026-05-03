@@ -1,7 +1,13 @@
 cmake-build-debug/
+; ignore assembly source
 *.asm
 *.m9s
+; ignore assembly intermediate
+*.m9i
+; ignore assembled binary
 *.m9b
 *.bin
+; ignore logs
 *.log
+; ignore macos files
 .DS_Store
