@@ -21,6 +21,8 @@ namespace m9
   struct Source
   {
     std::vector<SourceLine> lines{};
+    std::string filename{};
+    std::unordered_map<std::string, std::string> dependencies{};
   };
 
   struct ReadSource

@@ -14,6 +14,9 @@
 #include <vector>
 
 #include "m9a.h"
+
+#include <fstream>
+
 #include "cmd_line.h"
 #include "read_source.h"
 
@@ -67,20 +70,35 @@ static void Execute(const std::vector<std::string>& args)
     sources.emplace_back(std::move(source));
   }
 
+  std::ofstream intermediate_file("assembly.m9i");
+  if (!intermediate_file.is_open())
+  {
+    throw std::runtime_error("Could not open assembly.m9i");
+  }
+
   for (const auto& source : sources)
   {
+    intermediate_file << std::format("; Root: {}", source->filename) << std::endl;
+    for (const auto& [k, v] : source->dependencies)
+    {
+      intermediate_file << std::format(";   Dependency: {}: {}", k, v) << std::endl;
+    }
     const auto line_count = source->lines.size();
     std::cerr << "Sourced Line Count: " << line_count << std::endl;
     for (const auto&[source_file, source_line, relative_line_number, absolute_line_number] : source->lines)
     {
       if (source_file.starts_with("BIN["))
       {
+        intermediate_file << std::format("{:90} ; {}", source_line, source_file) << std::endl;
         std::cerr << source_file << " (" << absolute_line_number << " abs) : " << source_line << std::endl;
         continue;
       }
+      intermediate_file << std::format("{:90} ; {}:{}", source_line, source_file, relative_line_number) << std::endl;
       std::cerr << source_file << ":" << relative_line_number << " (" << absolute_line_number << " abs) : " << source_line << std::endl;
     }
   }
+
+  intermediate_file.close();
 
   std::cerr << "Done" << std::endl;
 }

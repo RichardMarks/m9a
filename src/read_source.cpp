@@ -186,6 +186,13 @@ namespace m9
       conditional_assembly_parser_state = std::make_unique<ConditionalAssemblyParserState>(symbols);
     }
 
+    struct DataLine
+    {
+      std::string line{};
+      size_t start_offset{};
+      size_t end_offset{};
+    };
+
     void IncludeFileAsDataBytesDirectives(std::string_view source_file, Source & src)
     {
       if (!std::filesystem::exists(source_file))
@@ -193,7 +200,7 @@ namespace m9
         throw std::runtime_error(FormatErrorMessage(std::format("File not found: '{}'", source_file)));
       }
 
-      std::vector<std::string> data_lines{};
+      std::vector<DataLine> data_lines{};
 
       try
       {
@@ -201,7 +208,7 @@ namespace m9
         constexpr auto CHUNK_SIZE = 16;
         const auto total = file_bytes.size();
 
-        for (auto i = 0; i < total; i += CHUNK_SIZE)
+        for (auto i = 0ull; i < total; i += CHUNK_SIZE)
         {
           const auto diff = total - i;
           const auto count = CHUNK_SIZE < diff ? CHUNK_SIZE : diff;
@@ -213,18 +220,37 @@ namespace m9
             ss << " ";
             ss << std::format("0x{:02X}", byte);
           }
-          data_lines.push_back(ss.str());
+          data_lines.push_back(DataLine{
+            .line = ss.str(),
+            .start_offset = i,
+            .end_offset = i + count - 1,
+          });
         }
       } catch (const std::exception& ex)
       {
         throw std::runtime_error(FormatErrorMessage(ex.what()));
       }
 
-      for (const auto &line : data_lines)
+      const auto generated_bytes = data_lines.back().end_offset;
+
+      const auto FormatDataLineSegment = [&generated_bytes](const auto start_offset, const auto end_offset)
+      {
+        if (generated_bytes < 256)
+        {
+          return std::format("{:02X}-{:02X}", start_offset, end_offset);
+        }
+        if (generated_bytes < 65536)
+        {
+          return std::format("{:04X}-{:04X}", start_offset, end_offset);
+        }
+        return std::format("{:08X}-{:08X}", start_offset, end_offset);
+      };
+
+      for (const auto &[data_line, start_offset, end_offset] : data_lines)
       {
         src.lines.emplace_back(SourceLine{
-            .source_file = std::format("BIN[{}]", source_file.data()),
-            .source_line = line,
+            .source_file = std::format("BIN[{}]:{}", source_file.data(), FormatDataLineSegment(start_offset, end_offset)),
+            .source_line = data_line,
             .relative_line_number = relative_line_count,
             .absolute_line_number = absolute_line_count,
           });
@@ -392,5 +418,7 @@ auto m9::ReadSource::ToSource(const std::string &filename,
   const auto source_processor = std::make_unique<SourceFileProcessor>(syms);
   auto src = std::make_unique<Source>();
   source_processor->ProcessFile(filename, *src);
+  src->filename = filename;
+  src->dependencies = source_processor->dependencies;
   return std::move(src);
 }
