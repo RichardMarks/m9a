@@ -43,9 +43,9 @@ namespace m9
 {
   struct ConditionalAssemblyParserState
   {
-    static constexpr auto BEGIN_CONDITIONAL_ASSEMBLY = "\x25\x69\x66"; // %if
-    static constexpr auto SWAP_CONDITIONAL_ASSEMBLY = "\x25\x65\x6c\x73\x65"; // %else
-    static constexpr auto END_CONDITIONAL_ASSEMBLY = "\x25\x65\x6e\x64\x69\x66"; // %endif
+    static constexpr auto BEGIN_CONDITIONAL_ASSEMBLY = R"(%if)";
+    static constexpr auto SWAP_CONDITIONAL_ASSEMBLY = R"(%else)";
+    static constexpr auto END_CONDITIONAL_ASSEMBLY = R"(%endif)";
 
     enum class State : uint8_t { EXCLUDE, INCLUDE };
 
