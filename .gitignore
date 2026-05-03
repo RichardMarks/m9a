@@ -1,0 +1,7 @@
+cmake-build-debug/
+*.asm
+*.m9s
+*.m9b
+*.bin
+*.log
+.DS_Store
