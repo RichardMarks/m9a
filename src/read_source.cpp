@@ -166,9 +166,17 @@ namespace m9
     }
   };
 
+  struct DataLine
+  {
+    [[maybe_unused]] std::string line{};
+    [[maybe_unused]] size_t start_offset{};
+    size_t end_offset{};
+  };
 
   struct SourceFileProcessor
   {
+    static constexpr auto TEXT_INCLUDE = R"(%inc)";
+    static constexpr auto BINARY_INCLUDE = R"(%bin)";
     size_t absolute_line_count{1LLu};
     size_t relative_line_count{1LLu};
     std::unordered_set<std::string> seen{};
@@ -185,13 +193,6 @@ namespace m9
     {
       conditional_assembly_parser_state = std::make_unique<ConditionalAssemblyParserState>(symbols);
     }
-
-    struct DataLine
-    {
-      std::string line{};
-      size_t start_offset{};
-      size_t end_offset{};
-    };
 
     void IncludeFileAsDataBytesDirectives(std::string_view source_file, Source & src)
     {
@@ -261,6 +262,11 @@ namespace m9
       }
     }
 
+    static bool IsSupportedTextFileFormat(const std::string_view source_file)
+    {
+      return source_file.ends_with(".asm") || source_file.ends_with(".m9s");
+    }
+
     void IncludeFile(const std::string_view source_file, Source &src,
                      const FileIncludeType file_include_type = FileIncludeType::TEXT)
     {
@@ -272,7 +278,7 @@ namespace m9
         return;
       }
 
-      if (!(source_file.ends_with(".asm") || source_file.ends_with(".m9s")))
+      if (!IsSupportedTextFileFormat(source_file))
       {
         throw std::runtime_error(FormatErrorMessage("Unsupported file type"));
       }
@@ -343,7 +349,7 @@ namespace m9
           continue;
         }
 
-        if (stripped_line.starts_with(".inc"))
+        if (stripped_line.starts_with(TEXT_INCLUDE))
         {
           if (conditional_assembly_parser_state->active_stack.back() == ConditionalAssemblyParserState::State::INCLUDE)
           {
@@ -362,7 +368,7 @@ namespace m9
           continue;
         }
 
-        if (stripped_line.starts_with(".bin"))
+        if (stripped_line.starts_with(BINARY_INCLUDE))
         {
           if (conditional_assembly_parser_state->active_stack.back() == ConditionalAssemblyParserState::State::INCLUDE)
           {

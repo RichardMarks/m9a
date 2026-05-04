@@ -11,6 +11,7 @@ target_sources(m9a
         src/cmd_line.cpp
         src/expression_parser.cpp
         src/read_source.cpp
+        src/preprocessor.cpp
         src/m9a.cpp
 )
 

@@ -12,18 +12,17 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include "m9a.h"
-
 #include <fstream>
 
+#include "m9a.h"
 #include "cmd_line.h"
-#include "read_source.h"
+#include "preprocessor.h"
 
 static void PrintBanner()
 {
   auto out = std::stringstream{};
-  out << std::format("{} v{}.{}.{} (c) {}, Richard Marks", m9::APP_NAME, m9::VERSION_MAJOR, m9::VERSION_MINOR, m9::VERSION_PATCH, m9::COPYRIGHT_YEAR);
+  out << std::format("{} v{}.{}.{} (c) {}, Richard Marks", m9::APP_NAME, m9::VERSION_MAJOR, m9::VERSION_MINOR,
+                     m9::VERSION_PATCH, m9::COPYRIGHT_YEAR);
   std::cerr << out.str() << std::endl;
 }
 
@@ -34,12 +33,57 @@ static void PrintUsage()
   std::cerr << out.str() << std::endl;
 }
 
-static void Execute(const std::vector<std::string>& args)
+struct IntermediateAssemblyFile
+{
+  std::unique_ptr<std::ofstream> fp{nullptr};
+  std::unique_ptr<std::stringstream> ss{nullptr};
+
+  explicit IntermediateAssemblyFile(const std::string &filename)
+  {
+    fp = std::make_unique<std::ofstream>(filename);
+
+    if (!fp)
+    {
+      throw std::runtime_error(std::format("Could not allocate for {}", filename));
+    }
+
+    if (!fp->is_open())
+    {
+      throw std::runtime_error(std::format("Could not open {}", filename));
+    }
+
+    ss = std::make_unique<std::stringstream>();
+  }
+
+  ~IntermediateAssemblyFile()
+  {
+    if (fp)
+    {
+      if (fp->is_open())
+      {
+        fp->close();
+      }
+    }
+  }
+
+  void Write(const std::string &text) const
+  {
+    *ss << text << std::endl;
+    *fp << text << std::endl;
+  }
+
+  [[nodiscard]] std::string GetContentsAsString() const
+  {
+    return ss->str();
+  }
+};
+
+static void Execute(const std::vector<std::string> &args)
 {
   if (!args.empty())
   {
     std::cerr << "Executing with args: ";
-    for (const auto& arg : args)
+    for (const auto &arg: args)
     {
       std::cerr << arg << " ";
     }
@@ -53,52 +97,25 @@ static void Execute(const std::vector<std::string>& args)
   command_line.PrintInputs();
   command_line.PrintOutputs();
 
-  const auto& input_filenames = command_line.GetInputs();
-  const auto& output_filename = command_line.GetOutput();
+  const auto &input_filenames = command_line.GetInputs();
+  const auto &output_filename = command_line.GetOutput();
 
-  const auto& symbols = command_line.GetDefinedValues();
+  const auto &symbols = command_line.GetDefinedValues();
 
-  std::vector<std::unique_ptr<m9::Source>> sources;
+  const IntermediateAssemblyFile m9i("assembly.m9i");
 
-  for (const auto& input_filename : input_filenames)
+  for (const auto &input_filename: input_filenames)
   {
-    if (!std::filesystem::exists(input_filename))
+    for (const auto preprocessed_lines =
+           m9::Preprocessor::ExecuteConditionalAssemblyAndDependencyPass(input_filename, symbols); const auto &line:
+         preprocessed_lines)
     {
-      continue;
-    }
-    auto source = m9::ReadSource::ToSource(input_filename, symbols);
-    sources.emplace_back(std::move(source));
-  }
-
-  std::ofstream intermediate_file("assembly.m9i");
-  if (!intermediate_file.is_open())
-  {
-    throw std::runtime_error("Could not open assembly.m9i");
-  }
-
-  for (const auto& source : sources)
-  {
-    intermediate_file << std::format("; Root: {}", source->filename) << std::endl;
-    for (const auto& [k, v] : source->dependencies)
-    {
-      intermediate_file << std::format(";   Dependency: {}: {}", k, v) << std::endl;
-    }
-    const auto line_count = source->lines.size();
-    std::cerr << "Sourced Line Count: " << line_count << std::endl;
-    for (const auto&[source_file, source_line, relative_line_number, absolute_line_number] : source->lines)
-    {
-      if (source_file.starts_with("BIN["))
-      {
-        intermediate_file << std::format("{:90} ; {}", source_line, source_file) << std::endl;
-        std::cerr << source_file << " (" << absolute_line_number << " abs) : " << source_line << std::endl;
-        continue;
-      }
-      intermediate_file << std::format("{:90} ; {}:{}", source_line, source_file, relative_line_number) << std::endl;
-      std::cerr << source_file << ":" << relative_line_number << " (" << absolute_line_number << " abs) : " << source_line << std::endl;
+      m9i.Write(line);
     }
   }
 
-  intermediate_file.close();
+  const auto contents = m9i.GetContentsAsString();
+  std::cerr << contents << std::endl;
 
   std::cerr << "Done" << std::endl;
 }
