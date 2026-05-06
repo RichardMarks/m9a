@@ -4,6 +4,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 namespace m9
 {
@@ -17,6 +18,8 @@ namespace m9
 
     static auto StripComments(const std::string &s) -> std::string;
 
-    static auto ToLower(std::string &s) -> std::string;
+    static auto ToLower(const std::string &s) -> std::string;
+
+    static auto StrTok(const std::string& input, const std::string& delimiters) -> std::vector<std::string>;
   };
 }
