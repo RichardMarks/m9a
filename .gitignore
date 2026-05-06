@@ -4,6 +4,7 @@ cmake-build-debug/
 *.m9s
 ; ignore assembly intermediate
 *.m9i
+*.m9i2
 ; ignore assembled binary
 *.m9b
 *.bin
