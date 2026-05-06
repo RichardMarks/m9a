@@ -17,6 +17,7 @@
 #include "m9a.h"
 #include "cmd_line.h"
 #include "preprocessor.h"
+#include "intermediate_assembly.h"
 
 static void PrintBanner()
 {
@@ -29,54 +30,9 @@ static void PrintBanner()
 static void PrintUsage()
 {
   auto out = std::stringstream{};
-  out << "Usage: m9a [-h] <input.m9s> [-o output.m9b]\n\n";
+  out << "Usage: m9a [-h -dDEF] <input.m9s> [-o output.m9b]\n\n";
   std::cerr << out.str() << std::endl;
 }
-
-struct IntermediateAssemblyFile
-{
-  std::unique_ptr<std::ofstream> fp{nullptr};
-  std::unique_ptr<std::stringstream> ss{nullptr};
-
-  explicit IntermediateAssemblyFile(const std::string &filename)
-  {
-    fp = std::make_unique<std::ofstream>(filename);
-
-    if (!fp)
-    {
-      throw std::runtime_error(std::format("Could not allocate for {}", filename));
-    }
-
-    if (!fp->is_open())
-    {
-      throw std::runtime_error(std::format("Could not open {}", filename));
-    }
-
-    ss = std::make_unique<std::stringstream>();
-  }
-
-  ~IntermediateAssemblyFile()
-  {
-    if (fp)
-    {
-      if (fp->is_open())
-      {
-        fp->close();
-      }
-    }
-  }
-
-  void Write(const std::string &text) const
-  {
-    *ss << text << std::endl;
-    *fp << text << std::endl;
-  }
-
-  [[nodiscard]] std::string GetContentsAsString() const
-  {
-    return ss->str();
-  }
-};
 
 static void Execute(const std::vector<std::string> &args)
 {
@@ -102,7 +58,7 @@ static void Execute(const std::vector<std::string> &args)
 
   const auto &symbols = command_line.GetDefinedValues();
 
-  const IntermediateAssemblyFile m9i("assembly.m9i");
+  m9::IntermediateAssemblyFile m9i("assembly.m9i");
 
   for (const auto &input_filename: input_filenames)
   {
@@ -114,8 +70,20 @@ static void Execute(const std::vector<std::string> &args)
     }
   }
 
-  const auto contents = m9i.GetContentsAsString();
-  std::cerr << contents << std::endl;
+  const auto contents = m9i.GetContentsAsLines();
+
+  std::cerr << "Preprocessed Line Count (Pre Sub): " << contents.size() << std::endl;
+
+  const auto substituted_contents = m9::Preprocessor::ExecuteConstantSubstitutionPass(contents);
+
+  std::cerr << "Preprocessed Line Count (Post Sub): " << substituted_contents.size() << std::endl;
+
+  m9::IntermediateAssemblyFile m9i2("assembly.m9i2");
+
+  for (const auto& line : substituted_contents)
+  {
+    m9i2.Write(line);
+  }
 
   std::cerr << "Done" << std::endl;
 }

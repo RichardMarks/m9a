@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="m9a" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="m9a_dev" TARGET_NAME="m9a" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="m9a_dev" RUN_TARGET_NAME="m9a">
+  <configuration default="false" name="m9a" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-dUSELIB lib.m9s game.m9s main.m9s" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" WORKING_DIR="file://$ProjectFileDir$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="m9a_dev" TARGET_NAME="m9a" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="m9a_dev" RUN_TARGET_NAME="m9a">
     <method v="2">
       <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
     </method>
