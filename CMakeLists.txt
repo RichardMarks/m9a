@@ -12,6 +12,7 @@ target_sources(m9a
         src/expression_parser.cpp
         src/read_source.cpp
         src/preprocessor.cpp
+        src/intermediate_assembly.cpp
         src/m9a.cpp
 )
 
