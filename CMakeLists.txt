@@ -13,6 +13,9 @@ target_sources(m9a
         src/read_source.cpp
         src/preprocessor.cpp
         src/intermediate_assembly.cpp
+        src/rom_file.cpp
+        src/token_stream.cpp
+        src/token_stream_assembler.cpp
         src/m9a.cpp
 )
 
