@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include "token.h"
+
 namespace m9
 {
   struct IntermediateAssemblyFile
@@ -25,5 +27,11 @@ namespace m9
     [[nodiscard]] std::string GetContentsAsString() const;
 
     [[nodiscard]] std::vector<std::string> GetContentsAsLines() const;
+  };
+
+  struct M9IFile
+  {
+    static void WriteM9I2TokenStreamDiagnosticsFile(const std::string &name, const std::vector<Token> &token_stream);
+
   };
 }

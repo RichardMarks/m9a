@@ -51,3 +51,21 @@ std::vector<std::string> m9::IntermediateAssemblyFile::GetContentsAsLines() cons
 {
   return lines;
 }
+
+void m9::M9IFile::WriteM9I2TokenStreamDiagnosticsFile(const std::string &name, const std::vector<Token> &token_stream)
+{
+  IntermediateAssemblyFile m9i2(std::format("{}.m9i2", name));
+
+  auto token_index = 1;
+  for (const auto &[token_type, token_context_type, value, num_value]: token_stream)
+  {
+    const auto tts = TokenTypeStr(token_type);
+    const auto tct = TokenTypeStr(token_context_type);
+    const auto num = num_value.has_value()
+                       ? std::format("(Number: {:8d} (0x{:X})", num_value.value(), num_value.value())
+                       : "";
+    const auto fmt = std::format("{:>14d}:{:>10}[{:>8}]: {:16} {}", token_index, tts, tct, value, num);
+    m9i2.Write(fmt);
+    token_index++;
+  }
+}
