@@ -571,158 +571,159 @@ void m9::TokenStreamAssembler::HandleMnemonic(const Token &current_token)
       }
     },
     {
-    "ai", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto imm = GetImmediateOperand();
-      if (mnemonic.ends_with(".b"))
+      "ai", [&]()
       {
-        EmitTypeOSRI1(OpCode::AI, reg, static_cast<uint8_t>(imm));
+        const auto reg = GetRegisterOperand();
+        const auto imm = GetImmediateOperand();
+        if (mnemonic.ends_with(".b"))
+        {
+          EmitTypeOSRI1(OpCode::AI, reg, static_cast<uint8_t>(imm));
+        } else if (mnemonic.ends_with(".w"))
+        {
+          EmitTypeOSRI2(OpCode::AI, reg, static_cast<uint16_t>(imm));
+        } else
+        {
+          EmitTypeOSRI4(OpCode::AI, reg, imm);
+        }
       }
-      else if (mnemonic.ends_with(".w"))
+    },
+    {
+      "sb", [&]()
       {
-        EmitTypeOSRI2(OpCode::AI, reg, static_cast<uint16_t>(imm));
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        const auto reg_c = GetRegisterOperand();
+        EmitTypeORRR(OpCode::SB, reg_a, reg_b, reg_c);
       }
-      else
+    },
+    {
+      "si", [&]()
       {
-        EmitTypeOSRI4(OpCode::AI, reg, imm);
+        const auto reg = GetRegisterOperand();
+        const auto imm = GetImmediateOperand();
+        if (mnemonic.ends_with(".b"))
+        {
+          EmitTypeOSRI1(OpCode::SI, reg, static_cast<uint8_t>(imm));
+        } else if (mnemonic.ends_with(".w"))
+        {
+          EmitTypeOSRI2(OpCode::SI, reg, static_cast<uint16_t>(imm));
+        } else
+        {
+          EmitTypeOSRI4(OpCode::SI, reg, imm);
+        }
       }
-    }},
+    },
     {
-    "sb", [&]()
-    {
-      const auto reg_a = GetRegisterOperand();
-      const auto reg_b = GetRegisterOperand();
-      const auto reg_c = GetRegisterOperand();
-      EmitTypeORRR(OpCode::SB, reg_a, reg_b, reg_c);
-    }},
-    {
-    "si", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto imm = GetImmediateOperand();
-      if (mnemonic.ends_with(".b"))
+      "mu", [&]()
       {
-        EmitTypeOSRI1(OpCode::SI, reg, static_cast<uint8_t>(imm));
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        const auto reg_c = GetRegisterOperand();
+        EmitTypeORRR(OpCode::MU, reg_a, reg_b, reg_c);
       }
-      else if (mnemonic.ends_with(".w"))
+    },
+    {
+      "mi", [&]()
       {
-        EmitTypeOSRI2(OpCode::SI, reg, static_cast<uint16_t>(imm));
+        const auto reg = GetRegisterOperand();
+        const auto imm = GetImmediateOperand();
+        if (mnemonic.ends_with(".b"))
+        {
+          EmitTypeOSRI1(OpCode::MI, reg, static_cast<uint8_t>(imm));
+        } else if (mnemonic.ends_with(".w"))
+        {
+          EmitTypeOSRI2(OpCode::MI, reg, static_cast<uint16_t>(imm));
+        } else
+        {
+          EmitTypeOSRI4(OpCode::MI, reg, imm);
+        }
       }
-      else
+    },
+    {
+      "dv", [&]()
       {
-        EmitTypeOSRI4(OpCode::SI, reg, imm);
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        const auto reg_c = GetRegisterOperand();
+        EmitTypeORRR(OpCode::DV, reg_a, reg_b, reg_c);
       }
-    }},
+    },
     {
-    "mu", [&]()
-    {
-      const auto reg_a = GetRegisterOperand();
-      const auto reg_b = GetRegisterOperand();
-      const auto reg_c = GetRegisterOperand();
-      EmitTypeORRR(OpCode::MU, reg_a, reg_b, reg_c);
-    }},
-    {
-    "mi", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto imm = GetImmediateOperand();
-      if (mnemonic.ends_with(".b"))
+      "di", [&]()
       {
-        EmitTypeOSRI1(OpCode::MI, reg, static_cast<uint8_t>(imm));
+        const auto reg = GetRegisterOperand();
+        const auto imm = GetImmediateOperand();
+        if (mnemonic.ends_with(".b"))
+        {
+          EmitTypeOSRI1(OpCode::DI, reg, static_cast<uint8_t>(imm));
+        } else if (mnemonic.ends_with(".w"))
+        {
+          EmitTypeOSRI2(OpCode::DI, reg, static_cast<uint16_t>(imm));
+        } else
+        {
+          EmitTypeOSRI4(OpCode::DI, reg, imm);
+        }
       }
-      else if (mnemonic.ends_with(".w"))
+    },
+    {
+      "dq", [&]()
       {
-        EmitTypeOSRI2(OpCode::MI, reg, static_cast<uint16_t>(imm));
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        const auto reg_c = GetRegisterOperand();
+        EmitTypeORRR(OpCode::DQ, reg_a, reg_b, reg_c);
       }
-      else
+    },
+    {
+      "qi", [&]()
       {
-        EmitTypeOSRI4(OpCode::MI, reg, imm);
+        const auto reg = GetRegisterOperand();
+        const auto imm = GetImmediateOperand();
+        if (mnemonic.ends_with(".b"))
+        {
+          EmitTypeOSRI1(OpCode::QI, reg, static_cast<uint8_t>(imm));
+        } else if (mnemonic.ends_with(".w"))
+        {
+          EmitTypeOSRI2(OpCode::QI, reg, static_cast<uint16_t>(imm));
+        } else
+        {
+          EmitTypeOSRI4(OpCode::QI, reg, imm);
+        }
       }
-    }},
+    },
     {
-    "dv", [&]()
-    {
-      const auto reg_a = GetRegisterOperand();
-      const auto reg_b = GetRegisterOperand();
-      const auto reg_c = GetRegisterOperand();
-      EmitTypeORRR(OpCode::DV, reg_a, reg_b, reg_c);
-    }},
-    {
-    "di", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto imm = GetImmediateOperand();
-      if (mnemonic.ends_with(".b"))
+      "ir", [&]()
       {
-        EmitTypeOSRI1(OpCode::DI, reg, static_cast<uint8_t>(imm));
+        const auto reg = GetRegisterOperand();
+        EmitTypeOR(OpCode::IR, reg);
       }
-      else if (mnemonic.ends_with(".w"))
+    },
+    {
+      "dr", [&]()
       {
-        EmitTypeOSRI2(OpCode::DI, reg, static_cast<uint16_t>(imm));
+        const auto reg = GetRegisterOperand();
+        EmitTypeOR(OpCode::DR, reg);
       }
-      else
+    },
+    {
+      "sx", [&]()
       {
-        EmitTypeOSRI4(OpCode::DI, reg, imm);
+        const auto reg = GetRegisterOperand();
+        const auto source_size = GetImmediateOperand();
+        SignExtendSourceBpp sx_bpp;
+        if (source_size == static_cast<uint8_t>(SignExtendSourceBpp::SX8))
+        {
+          sx_bpp = SignExtendSourceBpp::SX8;
+        } else if (source_size == static_cast<uint8_t>(SignExtendSourceBpp::SX16))
+        {
+          sx_bpp = SignExtendSourceBpp::SX16;
+        } else
+        {
+          throw std::runtime_error(std::format("Invalid Source Size: {} != 1 or 2", source_size));
+        }
+        EmitTypeORD(OpCode::SX, reg, sx_bpp);
       }
-    }},
-    {
-    "dq", [&]()
-    {
-      const auto reg_a = GetRegisterOperand();
-      const auto reg_b = GetRegisterOperand();
-      const auto reg_c = GetRegisterOperand();
-      EmitTypeORRR(OpCode::DQ, reg_a, reg_b, reg_c);
-    }},
-    {
-    "qi", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto imm = GetImmediateOperand();
-      if (mnemonic.ends_with(".b"))
-      {
-        EmitTypeOSRI1(OpCode::QI, reg, static_cast<uint8_t>(imm));
-      }
-      else if (mnemonic.ends_with(".w"))
-      {
-        EmitTypeOSRI2(OpCode::QI, reg, static_cast<uint16_t>(imm));
-      }
-      else
-      {
-        EmitTypeOSRI4(OpCode::QI, reg, imm);
-      }
-    }},
-    {
-    "ir", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      EmitTypeOR(OpCode::IR, reg);
-    }},
-    {
-    "dr", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      EmitTypeOR(OpCode::DR, reg);
-    }},
-    {
-    "sx", [&]()
-    {
-      const auto reg = GetRegisterOperand();
-      const auto source_size = GetImmediateOperand();
-      SignExtendSourceBpp sx_bpp;
-      if (source_size == static_cast<uint8_t>(SignExtendSourceBpp::SX8))
-      {
-        sx_bpp = SignExtendSourceBpp::SX8;
-      } else if (source_size == static_cast<uint8_t>(SignExtendSourceBpp::SX16))
-      {
-        sx_bpp = SignExtendSourceBpp::SX16;
-      }
-      else
-      {
-        throw std::runtime_error(std::format("Invalid Source Size: {} != 1 or 2", source_size));
-      }
-      EmitTypeORD(OpCode::SX, reg, sx_bpp);
-    }},
+    },
     //
     // CONTROL FLOW OPS
     //
@@ -733,7 +734,63 @@ void m9::TokenStreamAssembler::HandleMnemonic(const Token &current_token)
         const auto address = GetAddressOperand();
         EmitTypeOA(OpCode::UJ, address);
       }
-    }
+    },
+    {
+      "zj", [&]()
+      {
+        const auto address = GetAddressOperand();
+        const auto reg = GetRegisterOperand();
+        EmitTypeOAR(OpCode::ZJ, address, reg);
+      }
+    },
+    {
+      "nj", [&]()
+      {
+        const auto address = GetAddressOperand();
+        const auto reg = GetRegisterOperand();
+        EmitTypeOAR(OpCode::NJ, address, reg);
+      }
+    },
+    {
+      "ls", [&]()
+      {
+        const auto address = GetAddressOperand();
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        EmitTypeOARR(OpCode::LS, address, reg_a, reg_b);
+      }
+    },
+    {
+      "lu", [&]()
+      {
+        const auto address = GetAddressOperand();
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        EmitTypeOARR(OpCode::LU, address, reg_a, reg_b);
+      }
+    },
+    {
+      "ej", [&]()
+      {
+        const auto address = GetAddressOperand();
+        const auto reg_a = GetRegisterOperand();
+        const auto reg_b = GetRegisterOperand();
+        EmitTypeOARR(OpCode::EJ, address, reg_a, reg_b);
+      }
+    },
+    {
+      "pj", [&]()
+      {
+        const auto address = GetAddressOperand();
+        EmitTypeOA(OpCode::PJ, address);
+      }
+    },
+    {
+      "jp", [&]()
+      {
+        EmitTypeO(OpCode::JP);
+      }
+    },
   };
 
   const auto Handler = handlers.contains(mnemonic) ? handlers.at(mnemonic) : nullptr;
