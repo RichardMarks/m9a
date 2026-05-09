@@ -21,5 +21,7 @@ namespace m9
     static auto ToLower(const std::string &s) -> std::string;
 
     static auto StrTok(const std::string& input, const std::string& delimiters) -> std::vector<std::string>;
+
+    static void PrintHexDump(const uint8_t *memory, const uint32_t start, const uint32_t end);
   };
 }
