@@ -11,6 +11,8 @@
 
 #include "preprocessor.h"
 
+#include <unordered_set>
+
 
 #include "restricted_identifiers.h"
 #include "utils.h"
@@ -170,34 +172,225 @@ namespace m9
       return result;
     }
   };
+
+  struct ConstantsTable
+  {
+    std::unordered_map<std::string, std::string> constants{};
+
+    [[nodiscard]] auto Has(const std::string &key) const -> bool
+    {
+      return constants.contains(key);
+    }
+
+    [[nodiscard]] auto Get(const std::string &key) const -> std::string
+    {
+      return constants.at(key);
+    }
+
+    void Add(const std::string &key, const std::string &value)
+    {
+      constants.try_emplace(key, value);
+    }
+  };
+
+  static auto IsMnemonic(const std::string &identifier) -> bool
+  {
+    const std::unordered_set<std::string> mnemonics{
+      "no", "he", "wf", "so",
+      "ld", "ln", "st", "sn", "mv", "cp", "pu", "po", "xr",
+      "nd", "or", "eo", "nt", "sl", "sr", "ar",
+      "ad", "ai", "sb", "si", "mu", "mi", "dv", "di", "dq", "qi", "ir", "dr", "sx",
+      "uj", "zj", "nj", "ls", "lu", "ej",
+      "pj", "jp",
+    };
+    return mnemonics.contains(identifier);
+  }
+
+  struct TokenStreamBuilder
+  {
+    static auto PrepareLineForTokenizer(const std::string &line) -> std::string
+    {
+      const auto result = Util::Trim(Util::StripComments(Util::Trim(line)));
+      return result;
+    }
+
+    static void ParseNumber(const std::string &s, Token& result)
+    {
+      std::cerr << std::format("ParseNumber '{}'", s) << std::endl;
+
+      std::unordered_map<std::string, uint8_t> reg_map{
+        {"ra", 0x00 + 128},
+        {"rb", 0x01 + 128},
+        {"rc", 0x02 + 128},
+        {"rd", 0x03 + 128},
+        {"re", 0x04 + 128},
+        {"rf", 0x05 + 128},
+        {"sp", 0x06 + 128},
+        {"pc", 0x07 + 128}
+      };
+
+      if (reg_map.contains(s))
+      {
+        result.value = std::format("@{:d}", reg_map.at(s) - 128);
+        result.num_value = reg_map.at(s);
+        result.token_type = TokenType::OPERAND;
+        return;
+      }
+
+      if (s.starts_with("0x"))
+      {
+        // likely a hexadecimal number
+        // lets check
+        auto is_num = false;
+        try
+        {
+          const auto converted = std::stol(s, nullptr, 16);
+          result.value = std::format("{:d}", converted);
+          result.num_value = converted;
+          is_num = true;
+        } catch (...)
+        {
+          is_num = false;
+        }
+        if (is_num)
+        {
+          result.token_type = TokenType::OPERAND;
+        }
+        return;
+      }
+
+      if (std::isdigit(s[0]))
+      {
+        // likely is a decimal number
+        // lets check
+        auto is_num = false;
+        try
+        {
+          const auto converted = std::stol(s, nullptr, 10);
+          result.value = std::format("{:d}", converted);
+          result.num_value = converted;
+          is_num = true;
+        } catch (...)
+        {
+          is_num = false;
+        }
+        if (is_num)
+        {
+          result.token_type = TokenType::OPERAND;
+        }
+      }
+    }
+
+    static auto StrToToken(const std::string &s) -> Token
+    {
+      Token result;
+      result.token_type = TokenType::UNKNOWN;
+      result.value = s;
+      result.num_value = std::nullopt;
+      if (s.ends_with(':'))
+      {
+        result.token_type = TokenType::LABEL;
+        result.value = s.substr(0, s.size() - 1);
+        return result;
+      }
+      if (s.starts_with('.'))
+      {
+        result.token_type = TokenType::DIRECTIVE;
+        result.value = s.substr(1);
+        return result;
+      }
+      if (IsMnemonic(s))
+      {
+        result.token_type = TokenType::MNEMONIC;
+        return result;
+      }
+
+      if (s.starts_with('[') && s.ends_with(']') && s.size() > 2)
+      {
+        // address reference
+        const auto ref = s.substr(1, s.size() - 2);
+        result.token_context_type = TokenType::ADDRESS;
+        ParseNumber(ref, result);
+        return result;
+      }
+
+      if (s.ends_with(".b"))
+      {
+        if (const auto ref = s.substr(0, s.size() - 2); IsMnemonic(ref))
+        {
+          result.token_type = TokenType::MNEMONIC;
+        }
+      }
+
+      ParseNumber(s, result);
+      return result;
+    }
+
+    static auto Build(const std::vector<std::string> &lines, const ConstantsTable &ct) -> std::vector<Token>
+    {
+      std::vector<Token> result;
+
+      for (const auto &line: lines)
+      {
+        const auto prepared_line = PrepareLineForTokenizer(line);
+        std::cerr << std::format("Input Line: {}\nPrepared: {}", line, prepared_line) << std::endl;
+        const auto str_tokens = Util::StrTok(prepared_line, " \t,");
+        auto token_index = 0;
+        for (const auto &str_token: str_tokens)
+        {
+          std::cerr << std::format("  Token {}: {}", token_index, str_token) << std::endl;
+          token_index++;
+        }
+        token_index = 0;
+        for (const auto &str_token: str_tokens)
+        {
+          const auto lower_token = Util::ToLower(str_token);
+          if (ct.Has(lower_token))
+          {
+            const auto replacement = ct.Get(lower_token);
+            std::cerr << std::format("  Token Has Constant Replacement {}: {} -> {}", token_index, lower_token,
+                                     replacement) << std::endl;
+            result.emplace_back(StrToToken(replacement));
+            token_index++;
+            continue;
+          }
+          result.emplace_back(StrToToken(lower_token));
+          token_index++;
+        }
+      }
+
+      return result;
+    }
+  };
 }
 
 auto m9::Preprocessor::ExecuteConstantSubstitutionPass(
-  const std::vector<std::string> &lines) -> std::vector<std::string>
+  const std::vector<std::string> &lines) -> std::vector<Token>
 {
-  std::unordered_map<std::string, std::string> constants;
-  std::vector<std::string> result;
+  ConstantsTable ct;
+  std::vector<Token> result;
 
   // lets auto replace all register names with the correct values by using the substitution pass
-  constants.try_emplace("ra", "0x00");
-  constants.try_emplace("rb", "0x01");
-  constants.try_emplace("rc", "0x02");
-  constants.try_emplace("rd", "0x03");
-  constants.try_emplace("re", "0x04");
-  constants.try_emplace("rf", "0x05");
-  constants.try_emplace("sp", "0x06");
-  constants.try_emplace("pc", "0x07");
+  ct.Add("ra", "0x00");
+  ct.Add("rb", "0x01");
+  ct.Add("rc", "0x02");
+  ct.Add("rd", "0x03");
+  ct.Add("re", "0x04");
+  ct.Add("rf", "0x05");
+  ct.Add("sp", "0x06");
+  ct.Add("pc", "0x07");
 
   // pass 1. find all constant definitions (all .def directive lines get excluded from output here)
   // pass 2. substitute all constants
   // [lines] -> [P1] -> [P2] -> [lines with all constants replaced]
 
-  // All lines with .def directives
+  // All lines with %const directives
+  std::vector<std::string> to_process;
   for (const auto &line: lines)
   {
     if (!line.starts_with(CONSTANT_DIRECTIVE))
     {
-      result.push_back(line);
+      to_process.push_back(line);
       continue;
     }
     try
@@ -206,41 +399,19 @@ auto m9::Preprocessor::ExecuteConstantSubstitutionPass(
       // and insert them into the constants map
       const auto res = ConstantsParser::Parse(line);
       // identifiers are case-insensitive so added as lowercase
-      constants.try_emplace(Util::ToLower(res->identifier), res->substitution);
+      ct.Add(Util::ToLower(res->identifier), res->substitution);
     } catch (ConstantsParser::ParseException &e)
     {
       std::cerr << e.what() << std::endl;
     }
   }
 
-  for (auto &line: result)
+  const auto token_stream = TokenStreamBuilder::Build(to_process, ct);
+
+  result.reserve(token_stream.size());
+  for (const auto &token: token_stream)
   {
-    // do not replace label lines
-    if (line.ends_with(":"))
-    {
-      continue;
-    }
-
-    const auto tokens = Util::StrTok(line, " \t,");
-
-    if (tokens.empty())
-    {
-      continue;
-    }
-
-    std::string replaced_line = tokens.at(0);
-    for (auto i = 1; i < tokens.size(); ++i)
-    {
-      const auto &token = tokens.at(i);
-      if (const auto case_insensitive_token = Util::ToLower(token); constants.contains(case_insensitive_token))
-      {
-        replaced_line += " " + constants.at(case_insensitive_token);
-        continue;
-      }
-      replaced_line += " " + token;
-    }
-    line = std::move(replaced_line);
+    result.emplace_back(token);
   }
-
   return result;
 }
