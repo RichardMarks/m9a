@@ -38,6 +38,8 @@ namespace m9
     std::unique_ptr<TokenStream> token_stream{nullptr};
     std::unordered_map<std::string, uint16_t> label_addresses{};
 
+    size_t instruction_count{0};
+
     explicit TokenStreamAssembler(const std::vector<Token> &raw_token_stream);
 
     void Emit8(uint8_t value);

@@ -9,12 +9,27 @@
 
 m9::TokenStreamAssembler::TokenStreamAssembler(const std::vector<Token> &raw_token_stream)
 {
+  std::cerr << std::format("Starting Token Stream Assembler with {} tokens", raw_token_stream.size()) << std::endl;
+  auto token_index = 0;
+  for (const auto &[token_type, token_context_type, value, num_value]: raw_token_stream)
+  {
+    const auto is_number = num_value.has_value() ? std::format("YES: {}", num_value.value()) : "NO";
+    const auto val_space = std::format("'{}'", value);
+    const auto typ_space = std::format("Type: {}", TokenTypeStr(token_type));
+    const auto ctx_space = std::format("Ctx: {}", TokenTypeStr(token_context_type));
+    std::cerr << std::format("   Token {:08X}: {:20} {:18} {:18} Number? {}", token_index, val_space, typ_space, ctx_space, is_number) << std::endl;
+    token_index += 1;
+  }
   token_stream = std::make_unique<TokenStream>(raw_token_stream);
+
+  std::cerr << "*** PASS 1 (LABELS AND DIRECTIVES) ***" << std::endl;
 
   // first pass to handle directives and labels
   pass = Pass::Pass1;
   token_stream->Reset();
   ExecutePass();
+
+  std::cerr << "*** PASS 2 (CODE GENERATION) ***" << std::endl;
 
   // second pass
   pass = Pass::Pass2;
@@ -67,6 +82,7 @@ void m9::TokenStreamAssembler::Emit32(const uint32_t value)
 void m9::TokenStreamAssembler::EmitTypeO(const OpCode op_code)
 {
   Emit8(static_cast<uint8_t>(op_code));
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSRA(const OpCode op_code, const uint8_t sz, const uint8_t reg,
@@ -76,6 +92,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRA(const OpCode op_code, const uint8_t 
   Emit8(sz);
   Emit8(reg);
   Emit16(address);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSAR(const OpCode op_code, const uint8_t sz, const uint16_t address,
@@ -85,6 +102,7 @@ void m9::TokenStreamAssembler::EmitTypeOSAR(const OpCode op_code, const uint8_t 
   Emit8(sz);
   Emit16(address);
   Emit8(reg);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSRI1(const OpCode op_code, const uint8_t reg, const uint8_t imm)
@@ -93,6 +111,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI1(const OpCode op_code, const uint8_t
   Emit8(1);
   Emit8(reg);
   Emit8(imm);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSRI2(const OpCode op_code, const uint8_t reg, const uint16_t imm)
@@ -101,6 +120,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI2(const OpCode op_code, const uint8_t
   Emit8(2);
   Emit8(reg);
   Emit16(imm);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSRI4(const OpCode op_code, const uint8_t reg, const uint32_t imm)
@@ -109,6 +129,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI4(const OpCode op_code, const uint8_t
   Emit8(4);
   Emit8(reg);
   Emit32(imm);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSRR(const OpCode op_code, const uint8_t sz, const uint8_t reg_a,
@@ -118,6 +139,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRR(const OpCode op_code, const uint8_t 
   Emit8(sz);
   Emit8(reg_a);
   Emit8(reg_b);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOSR(const OpCode op_code, const uint8_t sz, const uint8_t reg)
@@ -125,6 +147,7 @@ void m9::TokenStreamAssembler::EmitTypeOSR(const OpCode op_code, const uint8_t s
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(sz);
   Emit8(reg);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeORR(const OpCode op_code, const uint8_t reg_a, const uint8_t reg_b)
@@ -132,12 +155,14 @@ void m9::TokenStreamAssembler::EmitTypeORR(const OpCode op_code, const uint8_t r
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg_a);
   Emit8(reg_b);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOA(const OpCode op_code, const uint16_t address)
 {
   Emit8(static_cast<uint8_t>(op_code));
   Emit16(address);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOAR(const OpCode op_code, const uint16_t address, const uint8_t reg)
@@ -145,6 +170,7 @@ void m9::TokenStreamAssembler::EmitTypeOAR(const OpCode op_code, const uint16_t 
   Emit8(static_cast<uint8_t>(op_code));
   Emit16(address);
   Emit8(reg);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOARR(const OpCode op_code, const uint16_t address, const uint8_t reg_a,
@@ -154,6 +180,7 @@ void m9::TokenStreamAssembler::EmitTypeOARR(const OpCode op_code, const uint16_t
   Emit16(address);
   Emit8(reg_a);
   Emit8(reg_b);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeORRR(const OpCode op_code, const uint8_t reg_a, const uint8_t reg_b,
@@ -163,6 +190,7 @@ void m9::TokenStreamAssembler::EmitTypeORRR(const OpCode op_code, const uint8_t 
   Emit8(reg_a);
   Emit8(reg_b);
   Emit8(reg_c);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeORC(const OpCode op_code, const uint8_t reg, const uint8_t count)
@@ -170,12 +198,14 @@ void m9::TokenStreamAssembler::EmitTypeORC(const OpCode op_code, const uint8_t r
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
   Emit8(count);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeOR(const OpCode op_code, const uint8_t reg)
 {
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::EmitTypeORD(const OpCode op_code, const uint8_t reg, const SignExtendSourceBpp sx_bpp)
@@ -183,6 +213,7 @@ void m9::TokenStreamAssembler::EmitTypeORD(const OpCode op_code, const uint8_t r
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
   Emit8(static_cast<uint8_t>(sx_bpp));
+  instruction_count++;
 }
 
 void m9::TokenStreamAssembler::ValidateRegister(const uint8_t reg)
@@ -197,8 +228,10 @@ void m9::TokenStreamAssembler::ExpectTokenType(const TokenType expected_type, co
 {
   if (token.token_type != expected_type)
   {
-    throw std::runtime_error(
-      "ExpectTokenType: Unexpected token type: " + TokenTypeStr(expected_type) + " with value: " + token.value);
+    const auto actual = TokenTypeStr(token.token_type);
+    const auto expected = TokenTypeStr(expected_type);
+    const auto msg = std::format("ExpectTokenType: actual '{}' != expected '{}' with value '{}'", actual, expected, token.value);
+    throw std::runtime_error(msg);
   }
 }
 
@@ -224,6 +257,22 @@ uint32_t m9::TokenStreamAssembler::GetImmediateOperand() const
 {
   ExpectAnotherToken();
   const auto op_imm = token_stream->Consume();
+  if (op_imm->token_type == TokenType::UNKNOWN)
+  {
+    // this is potentially a forward reference to a label
+    // if this is the first pass, return 0 as the immediate value
+    if (pass == Pass::Pass1)
+    {
+      return 0;
+    }
+    // on the second pass, we can check against all known labels
+    if (label_addresses.contains(op_imm->value))
+    {
+      const auto imm = label_addresses.at(op_imm->value);
+      return imm;
+    }
+    throw std::runtime_error(std::format("GetImmediateOperand: Unable to resolve potential label reference: {}", op_imm->value));
+  }
   ExpectTokenType(TokenType::OPERAND, *op_imm);
   const auto imm = op_imm->num_value.value();
   return imm;
@@ -286,17 +335,23 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
 {
   const auto directive = current_token.value;
 
+  std::cerr << "--- DIRECTIVE: " << directive << std::endl;
+
   const std::unordered_map<std::string, std::function<void()> > handlers{
     {
       "start", [&]()
       {
         const auto address = GetAddressOperand();
         start_address = address;
+        std::cerr << std::format("--- START DIRECTIVE: LOCATE PROGRAM AT ADDRESS 0x{:04X}", start_address) << std::endl;
+        program_counter = start_address;
       }
     },
     {
       "byte", [&]()
       {
+        auto count = 0;
+        auto from_address = program_counter;
         // consume tokens while type is Operand and there are still tokens
         while (true)
         {
@@ -307,7 +362,10 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
           const auto op_byte = token_stream->Consume();
           const auto byte = op_byte->num_value.value_or(0);
           Emit8(byte);
+          count++;
         }
+        auto to_address = program_counter;
+        std::cerr << std::format("--- BYTE DIRECTIVE: INSERT {} Byte{} from 0x{:04X} to 0x{:04X}", count,(count == 1 ? "" : "s"), from_address, to_address) << std::endl;
       }
     }
   };
@@ -323,6 +381,8 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
 void m9::TokenStreamAssembler::HandleMnemonic(const Token &current_token)
 {
   const auto mnemonic = current_token.value;
+
+  std::cerr << "--- MNEMONIC: " << mnemonic << std::endl;
 
   const std::unordered_map<std::string, std::function<void()> > handlers{
     {
@@ -814,7 +874,21 @@ void m9::TokenStreamAssembler::HandleToken(const Token &current_token)
   {
   case TokenType::DIRECTIVE: HandleDirective(current_token);
     break;
-  case TokenType::MNEMONIC: HandleMnemonic(current_token);
+  case TokenType::MNEMONIC:
+  {
+    const auto program_at_mnemonic = program_counter;
+    const auto offset_at_mnemonic = token_stream->GetOffset() - 1;
+    HandleMnemonic(current_token);
+    const auto program_after_mnemonic = program_counter;
+    const auto offset_after_mnemonic = token_stream->GetOffset();
+    auto memory_consumed = program_after_mnemonic - program_at_mnemonic;
+    const auto tokens_consumed = offset_after_mnemonic - offset_at_mnemonic;
+    if (pass == Pass::Pass1)
+    {
+      memory_consumed = 0;
+    }
+    std::cerr << std::format("---         : Tokens consumed: {} Bytes of memory consumed: {}", tokens_consumed, memory_consumed) << std::endl;
+  }
     break;
   case TokenType::LABEL:
   {
@@ -826,6 +900,7 @@ void m9::TokenStreamAssembler::HandleToken(const Token &current_token)
         throw std::runtime_error("Duplicate label name: " + label);
       }
       label_addresses.try_emplace(label, program_counter);
+      std::cerr << std::format("--- ADD LABEL: {} at address 0x{:04X}", label, program_counter) << std::endl;
     }
   }
   break;
@@ -862,13 +937,18 @@ void m9::TokenStreamAssembler::ExecutePass()
 
     try
     {
+      std::cerr << std::format("--- Handle Token {:08X}/{:08X}", token_stream->GetOffset() - 1, token_stream->GetSize() - 1) << std::endl;
       HandleToken(*next_token);
     } catch ([[maybe_unused]] std::exception &e)
     {
-      std::cerr << std::format("ExecutePass Error at token {:d}/{:d}", (1 + token_stream->GetOffset()),
-                               token_stream->GetSize()) << std::endl;
+      std::cerr << std::format("ExecutePass({}) Error at token {:08X}/{:08X}", pass == Pass::Pass1 ? "1" : "2", token_stream->GetOffset(),
+                               token_stream->GetSize() - 1) << std::endl;
       throw;
     }
     i = token_stream->GetOffset();
+  }
+  if (pass == Pass::Pass1)
+  {
+    instruction_count = 0;
   }
 }

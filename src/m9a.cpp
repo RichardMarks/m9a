@@ -34,7 +34,9 @@ namespace m9
         const auto msg = std::format("Assembled binary will not fit in Rom data. '{}' bytes will be lost.", lost);
         throw std::runtime_error(msg);
       }
-      std::cerr << std::format("Assembled Binary is {} Bytes", tsa.bytes.size()) << std::endl;
+      std::cerr << "\nASSEMBLY COMPLETE" << std::endl;
+      std::cerr << std::format("--- Assembled Rom Contains {} Instructions", tsa.instruction_count) << std::endl;
+      std::cerr << std::format("--- Assembled Rom Binary is {} Bytes (Header + Data)", sizeof(rom.header) + tsa.bytes.size()) << std::endl;
       auto offset = 0;
       for (const auto &byte: tsa.bytes)
       {
@@ -42,9 +44,9 @@ namespace m9
       }
       rom.header.data_length = offset;
       rom.header.start_address = tsa.start_address;
-      std::cerr << std::format("Assembled Rom Data Length: {}", rom.header.data_length) << std::endl;
-      std::cerr << std::format("Assembled Rom Start Address: 0x{:04X}", rom.header.start_address) << std::endl;
-      Util::PrintHexDump(rom.data, 0, rom.header.data_length);
+      std::cerr << std::format("--- Assembled Rom Data Length  : {}", rom.header.data_length) << std::endl;
+      std::cerr << std::format("--- Assembled Rom Start Address: 0x{:04X}", rom.header.start_address) << std::endl;
+      Util::PrintHexDump("Assembled Rom Data", rom.data, 0, rom.header.data_length, rom.header.start_address);
     }
   };
 }
