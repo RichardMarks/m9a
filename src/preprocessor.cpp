@@ -314,7 +314,7 @@ namespace m9
         return result;
       }
 
-      if (s.ends_with(".b"))
+      if (s.ends_with(".b") || s.ends_with(".w") || s.ends_with(".d"))
       {
         if (const auto ref = s.substr(0, s.size() - 2); IsMnemonic(ref))
         {
