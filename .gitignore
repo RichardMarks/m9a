@@ -1,4 +1,5 @@
 cmake-build-debug/
+build/
 ; ignore assembly source
 *.asm
 *.m9s
