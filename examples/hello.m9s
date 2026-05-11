@@ -1,0 +1,231 @@
+; hello.m9s
+; M9 Hello World Example Program
+; This program outputs the text "Hello, World!"
+; on the HIRES graphics mode screen in multiple colors.
+
+; -----------------------------------------------------------------------------
+; LICENSE
+; -----------------------------------------------------------------------------
+; MIT License
+;
+; Copyright © 2026 Richard Marks
+;
+;Permission is hereby granted, free of charge, to any person obtaining a copy
+;of this software and associated documentation files (the "Software"), to deal
+;in the Software without restriction, including without limitation the rights
+;to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+;copies of the Software, and to permit persons to whom the Software is
+;furnished to do so, subject to the following conditions:
+;
+;The above copyright notice and this permission notice shall be included in all
+;copies or substantial portions of the Software.
+;
+;THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;SOFTWARE.
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; THE GOAL, AND HOW WE WILL GET THERE
+; -----------------------------------------------------------------------------
+; Output the text string "Hello, World!" on the screen in multiple colors.
+;
+; Our string to be printed has a length of 13 characters.
+; By default the LORES graphics mode only can display 10 columns of 6 rows of
+; text on the screen at one time. We will need to enable HIRES graphics mode
+; so that 21 columns of 12 rows of text can be displayed on the screen.
+; To enable HIRES graphics mode, the 7th bit needs to be set in the system
+; display state register located at memory address 0x01.
+; We also need to make sure that the 1st bit is set to enable text rendering
+; otherwise, we will not see anything output on the screen.
+; We want to make sure that bits 6 through 2 are set to zero, because we are
+; not using the hardware tiles and sprites features in this program, and they
+; will only cause us to do more work to set everything up.
+;
+; We want to output the string approximately in the center of the screen.
+; We need to figure out which horizontal column and vertical row to start
+; outputting the string of characters, so that the text is centered as desired.
+;
+; (21 columns - 13 characters) / 2 = 4 columns
+;
+; (12 rows - 1 character) / 2  = 5.5 rows
+;
+; Rounding up, we will use the 4th column and 6th row to output the text.
+; We count from zero, so the 4th column is column 3 and the 6th row is row 5.
+;
+; There is no built-in way to output a string to the screen directly.
+; A string is made up of characters. Each character has an associated number.
+; We will need to store each number in memory somewhere so that we can output
+; the string. We can place a label where we put the numbers in memory to easily
+; reference the string of characters. We also need to know how many characters
+; are in the string, we will place a zero at the end like C-style strings do.
+; We will label our string "s_hello".
+;
+; To print the string to the screen, we will have to copy each character to the
+; TEXT BUFFER at the correct offset, and increment that offset with each of the
+; characters. We will have to also set the color of the character by placing
+; the correct color code in the TEXT BUFFER at the correct offset.
+; We will perform this using a simple loop.
+;
+; Our program should look like this pseudocode:
+;
+; START:
+;   ENABLE HIRES MODE
+;   TEXT_BUFFER_LOCATION = ADDRESS @ [0x104]
+;   INDEX = 0
+;   COLOR = 1
+;   TEXT  = TEXT_BUFFER_LOCATION + COLUMN + ROW * 21
+;   ATTR  = TEXT_BUFFER_LOCATION + 252 + COLUMN + ROW * 21
+; NEXT:
+;   CHARACTER = STRING_DATA + INDEX
+;   GOTO DONE IF CHARACTER EQUALS 0
+;   COPY CHARACTER TO TEXT + INDEX
+;   COPY COLOR TO ATTR + INDEX
+;   INCREMENT INDEX
+;   INCREMENT COLOR
+;   GOTO NEXT
+; DONE:
+;   CHECK FOR FIRE1 BUTTON PRESSED
+;   GOTO DONE IF FIRE1 BUTTON NOT PRESSED
+; END:
+;   HALT EXECUTION
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; WHERE IS MY PROGRAM?
+; -----------------------------------------------------------------------------
+; Your program has to live within the M9 memory somewhere, and by default it
+; will be located at the start of Memory Bank 1 at address 0x19E4.
+; Since we are using HIRES graphics mode for this program, there will be a
+; problem with this location, as the HIRES pixel buffer will overwrite the
+; data in Memory Bank 1, erasing our program from memory!
+; To solve this problem, we need to relocate the program to a location which
+; is safe from memory conflicts. The first safe location is the start of
+; Memory Bank 4 at address 0x49E4.
+; We must do this before any other code in the program, otherwise the labels
+; will all have the wrong addresses after assembling the program!
+; -----------------------------------------------------------------------------
+.start [0x49E4]
+
+; -----------------------------------------------------------------------------
+; PROGRAM START
+; -----------------------------------------------------------------------------
+start:
+                     ; DISABLE THE GRAPHICS DEVICE
+                     ; THIS MUST BE DONE BEFORE SWITCHING GRAPHICS MODES
+    MV.b RA 0xD0     ; system operation 0xD0 is DisableGraphicsDevice
+    SO               ; execute system operation
+                     ; Anything drawn to the screen before enabling the
+                     ; graphics device will not be visible. The buffers
+                     ; will be cleared when the graphics device is enabled
+                     ; again.
+    MV.b RA 0x82     ; HIRES + TEXT RENDERING enable = 0x82
+    ST.b [0x1] RA    ; write to system display state register 0x1
+                     ; ENABLE THE GRAPHICS DEVICE
+                     ; THIS MUST BE DONE TO APPLY GRAPHICS MODE CHANGES
+    MV.b RA 0xD1     ; system operation 0xD1 is EnableGraphicsDevice
+    SO               ; execute system operation
+                     ; Graphics Device is initialized to HIRES mode now
+
+                     ; CALCULATE TEXT BUFFER POINTER
+                     ; WE ONLY NEED TO DO THIS ONCE SINCE THE TEXT IS STATIC AND ALWAYS
+                     ; IN THE SAME LOCATION ON THE SCREEN.
+    LD.w RA [0x104]  ; 0x104 is the TEXT BUFFER LOCATION pointer address
+                     ; RA now holds the TEXT BUFFER LOCATION pointer
+    AI.b RA 108      ; RA += 108 ( 3 + 5 * 21 )
+                     ; RA now holds TEXT BUFFER LOCATION pointer @ X,Y
+    LD.w RB [0x106]  ; 0x106 is the PIXEL BUFFER LOCATION pointer address
+                     ; RB now holds the PIXEL BUFFER LOCATION pointer
+                     ; store RA in first and second bytes of pixel buffer
+    SN.w [RB] RA     ; [RB] = RA
+    AI.b RB 2        ; RB += 2
+    AI.b RA 252      ; RA += 252
+                     ; store RA in third and fourth bytes of pixel buffer
+    SN.w [RB] RA     ; [RB] = RA
+    SI.b RB 2        ; RB -= 2 (to keep a pointer to the pixel buffer)
+    CP RE RB         ; RE = RB (keep the pixel buffer location address in RE)
+                     ; PIXEL BUFFER now contains
+                     ; [AH][AL][BH][BL]
+                     ; AH = high byte of text X,Y address
+                     ; AL = low byte of text X,Y address
+                     ; BH = high byte of color X,Y address
+                     ; BL = low byte of color X,Y address
+                     ; RE now holds the PIXEL BUFFER LOCATION pointer
+    MV.b RA 0        ; RA = 0
+                     ; RA will be used as a counter to iterate through the each
+                     ; character in the s_hello string of text
+    MV.b RB 1        ; RB = 1
+                     ; RB will be used as a counter to iterate through the
+                     ; color palette. we do not check for out of bound color,
+                     ; since we only display 13 characters of text and we will then
+                     ; go through 13 of 16 colors.
+next:
+                     ; CHARACTER = STRING_DATA + INDEX
+    MV.w RC s_hello  ; RC = address of s_hello
+                     ; add index to get the correct character
+    AD RC RC RA      ; RC += RA
+                     ; RC now holds the address of the next character to be output
+                     ; look at that address and get the byte found there and place
+                     ; into RF
+    LN.b RF [RC]     ; RF = [RC]
+                     ; RF now holds the character
+    ZJ done RF       ; if RF == 0 then goto done
+                     ; look at the address in RE and get the 16-bit address
+                     ; found there and place that found address in RD
+    LN.w RD [RE]     ; RD = [RE]
+                     ; RD now holds the precalculated address of the output
+                     ; add index to get the correct output location
+    AD RD RD RA      ; RD += RA
+                     ; RD now holds the output address for the character
+                     ; put the character there
+    SN.b [RD] RF     ; [RD] = RF
+                     ; the attr location is 252 bytes after the output address
+    AI.b RD 252      ; RD += 252
+                     ; RD now holds the address for the character's color attr
+                     ; put the color there
+    SN.b [RD] RB     ; [RD] = RB
+    WF               ; wait for the frame to render
+                     ; INCREMENT INDEX
+    IR RA            ; RA += 1
+                     ; INCREMENT COLOR
+    IR RB            ; RB += 1
+    UJ next          ; goto next
+done:
+    WF               ; wait for the frame to render
+                     ; RA is the INDEX
+                     ; RB is the COLOR
+                     ; RC is available
+                     ; RD is available
+                     ; RE is the pixel buffer pointer
+                     ; RF is available
+                     ; we have 3 registers available
+    LD.b RF [0x03]   ; load player 1 input state byte into RF
+                     ; check if the fire1 button is being pressed
+                     ; fire1 is the 5th bit, a value of 32
+    MV.b RC 32       ; RC = 32
+    ND RF RF RC      ; RF &= RC
+    EJ end RF RC     ; if RF == RC then goto done
+    UJ done          ; goto done
+end:
+    HE               ; halt execution
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; STRING DATA
+; -----------------------------------------------------------------------------
+; We will display "Hello, World!" on the screen.
+; The string data needs a label to easily figure out
+; where the data lives in memory for our program to
+; find it. Each byte is stored directly in memory
+; at this location. We end the string data with a
+; zero to indicate the end of the string C-string style.
+s_hello:
+    .byte 0x48 0x65 0x6c 0x6c 0x6f
+    .byte 0x2c 0x20
+    .byte 0x57 0x6f 0x72 0x6c 0x64 0x21
+    .byte 0x00
+; -----------------------------------------------------------------------------
