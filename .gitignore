@@ -3,6 +3,7 @@ build/
 ; ignore assembly source
 *.asm
 *.m9s
+!examples/*.m9s
 ; ignore assembly intermediate
 *.m9i
 *.m9i2
