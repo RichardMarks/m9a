@@ -4,7 +4,10 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
+
 #include "utils.h"
+
 
 auto m9::Util::LTrim(const std::string &s) -> std::string
 {
@@ -85,40 +88,50 @@ auto m9::Util::StrTok(const std::string &input, const std::string &delimiters) -
   return tokens;
 }
 
-void m9::Util::PrintHexDump(const uint8_t *memory, const uint32_t start, const uint32_t end)
+void m9::Util::PrintHexDump(const std::string& header_text, const uint8_t *memory, const uint32_t start, const uint32_t end, const uint32_t base)
 {
-  const auto original_fill = std::cout.fill();
-  std::cout << "\n--- Memory Hex Dump (0x" << std::hex << start << " - 0x" << end << ") ---\n";
+  std::stringstream ss;
+  const auto start_pos = start + base;
+  const auto end_pos = end + base;
+  const auto count = end - start;
+  const auto right_header = std::format("(0x{:04X} - 0x{:04X}) {:>5} Bytes", start_pos, end_pos, count);
+  ss << std::format("--- {:<33}{:>43}", header_text, right_header) << std::endl;
+  ss << std::setfill('-') << std::setw(80) << "-" << std::setfill(' ') << std::endl;
 
   for (auto i = start; i < end; i += 16)
   {
     // Address label
-    std::cout << std::setfill('0') << std::setw(4) << std::hex << i << ": ";
+    ss << std::format("{:04X}: ", i + base);
 
     // Hex bytes
     for (auto j = 0; j < 16; ++j)
     {
       if (i + j < end)
       {
-        std::cout << std::setw(2) << static_cast<int>(memory[i + j]) << " ";
+        const auto byte = memory[i + j];
+        ss << std::format("{:02X} ", byte);
       } else
       {
-        std::cout << "   ";
+        ss << "   ";
       }
     }
 
     // ASCII representation
-    std::cout << " |";
+    ss << "        |";
     for (auto j = 0; j < 16; ++j)
     {
       if (i + j < end)
       {
         const auto c = memory[i + j];
-        std::cout << (std::isprint(c) ? static_cast<char>(c) : '.');
+        ss << (std::isprint(c) ? static_cast<char>(c) : '.');
+      } else
+      {
+        ss << " ";
       }
     }
-    std::cout << "|\n";
+    ss << "|\n";
   }
-  std::cout << std::dec << "--------------------------------------------\n" << std::endl;
-  std::cout << std::setfill(original_fill);
+  ss << std::setfill('-') << std::setw(80) << "-" << std::setfill(' ') << std::endl;
+  std::cout << ss.str();
+  ss.clear();
 }

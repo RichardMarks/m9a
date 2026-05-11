@@ -22,6 +22,6 @@ namespace m9
 
     static auto StrTok(const std::string& input, const std::string& delimiters) -> std::vector<std::string>;
 
-    static void PrintHexDump(const uint8_t *memory, const uint32_t start, const uint32_t end);
+    static void PrintHexDump(const std::string& header_text, const uint8_t *memory, const uint32_t start, const uint32_t end, const uint32_t base = 0);
   };
 }
