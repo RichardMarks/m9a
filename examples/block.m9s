@@ -1,0 +1,89 @@
+; block.m9s
+; M9 Custom Character Example Program
+; This program demonstrates several key techniques:
+;
+;   1. Duplicating the default character set (charset)
+;   2. Modifying individual character glyphs
+;   3. Updating memory location pointers
+;   4. Implementing input waiting loops
+;
+; Specific actions performed:
+;   - Replaces the exclamation point glyph with a solid 5x5 square
+;   - Places the modified "!" character at the top-left of the LORES text buffer
+;   - Displays the result as a green 5x5 pixel block
+;   - Enters a loop waiting for the FIRE1 button press
+
+; -----------------------------------------------------------------------------
+; LICENSE
+; -----------------------------------------------------------------------------
+; MIT License
+;
+; Copyright © 2026 Richard Marks
+;
+;Permission is hereby granted, free of charge, to any person obtaining a copy
+;of this software and associated documentation files (the "Software"), to deal
+;in the Software without restriction, including without limitation the rights
+;to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+;copies of the Software, and to permit persons to whom the Software is
+;furnished to do so, subject to the following conditions:
+;
+;The above copyright notice and this permission notice shall be included in all
+;copies or substantial portions of the Software.
+;
+;THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;SOFTWARE.
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; PROGRAM START
+; -----------------------------------------------------------------------------
+start:
+  ; ---------------------------------------------------------------------------
+  ; INITIALIZE THE DISPLAY STATE REGISTER
+  ; ---------------------------------------------------------------------------
+  MV.b RA 0x2       ; set dsr bits for lores graphics mode and text rendering
+  ST.b [0x1] RA     ; update dsr
+  ; ---------------------------------------------------------------------------
+  ; DUPLICATE DEFAULT CHARSET INTO MEMORY BANK B
+  ; ---------------------------------------------------------------------------
+  MV.b RA 0xC0      ; SYSOP_COPY_COUNT
+  MV.w RB 0x0200    ; default charset is the source address
+  MV.w RC 0xB9E4    ; memory bank B is the destination address
+  MV.w RD 0x03FC    ; 1,020 bytes is the whole charset
+  SO                ; perform the system operation
+  ; ---------------------------------------------------------------------------
+  ; MODIFY A CHARACTER IN THE DUPLICATE CHARSET
+  ; ---------------------------------------------------------------------------
+  MV RA 0xFFFFFFFF  ; 32-bit character definition
+  MV.w RD 0xBA68    ; character address
+  SN [RD] RA        ; apply character modification
+  ; ---------------------------------------------------------------------------
+  ; WRITE "!" TO TOP LEFT CORNER OF SCREEN
+  ; ---------------------------------------------------------------------------
+  MV.b RF 0x21      ; put "!" character code in RF
+  LD.w RD [0x104]   ; put text buffer location in RD
+  SN.b [RD] RF      ; output character
+  ; ---------------------------------------------------------------------------
+  ; UPDATE SYSTEM GLYPH BUFFER LOCATION POINTER
+  ; ---------------------------------------------------------------------------
+  ST.w [0x102] RC   ; tell the system to use the new charset
+; -----------------------------------------------------------------------------
+; INFINITE LOOP WAITING FOR FIRE1 BUTTON
+; -----------------------------------------------------------------------------
+check_fire1:
+  WF                ; wait for frame to render
+  LD.b RF [0x03]    ; put player1 input state into RF
+  MV.b RC 0x20      ; fire1 button mask
+  ND RF RF RC       ; apply mask
+  EJ end RF RC      ; if we got a match we go to end
+  UJ check_fire1    ; go back to check again
+; -----------------------------------------------------------------------------
+; END OF PROGRAM
+; -----------------------------------------------------------------------------
+end:
+  HE                ; halt cpu
