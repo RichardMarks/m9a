@@ -1,0 +1,237 @@
+; sprite.m9s
+; M9 UFO Sprite Example Program
+
+; - Construct a custom UFO sprite by combining four 5x5 character glyphs.
+; - The final sprite is scaled 2x, resulting in a 10x10 pixel graphic.
+; - The sprite is rendered in red and centered on the screen.
+; - The program waits for Player 1's FIRE1 button to exit.
+
+; We are going to create a single-layer 2x-scale sprite to display this UFO:
+
+;   0123456789
+; 0 ...████...
+; 1 ..█....█..
+; 2 ..█....█..
+; 3 ..█....█..
+; 4 .██....██.
+; 5 █..████..█
+; 6 .█......█.
+; 7 ..██████..
+; 8 .█......█.
+; 9 █........█
+
+; -----------------------------------------------------------------------------
+; LICENSE
+; -----------------------------------------------------------------------------
+; MIT License
+;
+; Copyright © 2026 Richard Marks
+;
+;Permission is hereby granted, free of charge, to any person obtaining a copy
+;of this software and associated documentation files (the "Software"), to deal
+;in the Software without restriction, including without limitation the rights
+;to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+;copies of the Software, and to permit persons to whom the Software is
+;furnished to do so, subject to the following conditions:
+;
+;The above copyright notice and this permission notice shall be included in all
+;copies or substantial portions of the Software.
+;
+;THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+;IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+;FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+;AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+;LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+;OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+;SOFTWARE.
+; -----------------------------------------------------------------------------
+
+; -----------------------------------------------------------------------------
+; PROGRAM START
+; -----------------------------------------------------------------------------
+start:
+  ; ---------------------------------------------------------------------------
+  ; INITIALIZE THE DISPLAY STATE REGISTER
+  ; ---------------------------------------------------------------------------
+  MV.b RA 0x4       ; set dsr bits for lores graphics mode and sprite rendering
+  ST.b [0x1] RA     ; update dsr
+
+  ; ---------------------------------------------------------------------------
+  ; UPLOAD CUSTOM GLYPH DATA
+  ; ---------------------------------------------------------------------------
+  ; Each 5x5 glyph (25 pixels) packs into the MSBs of a 32-bit word.
+  ; The remaining 7 LSBs are zero-padded.
+  ;
+  ; PACKING METHOD:
+  ; 1. Read each row of the 5x5 grid, left-to-right placing a zero where there
+  ;    is no pixel, and a 1 where there is a pixel. You will get a string of
+  ;    5 bits.
+  ; 2. Concatenate the 5 rows of bits into a 25-bit string.
+  ; 3. Append 7 zero-bits to the end of the string to get a 32-bit string.
+  ; 4. Group bits into 4-bit nibbles.
+  ; 5. Convert each nibble to the corresponding hexadecimal digit.
+  ; 6. Concatenate each hex digit to form an 8-digit hexadecimal value.
+  ;
+  ; Note: Value is stored as a 32-bit Little-Endian number in memory,
+  ; but the Hexadecimal string is constructed in Big-Endian order.
+  
+  ; ===========================================================================
+  ; UFO GLYPH GRAPHICS BREAKDOWN
+  ; ===========================================================================
+  ;   0123456789| PIXELS (0,0) to (4,4)                      UFO TOP LEFT GLYPH
+  ; ===========================================================================
+  ; 0 ...████...| ...██ = 00011
+  ; 1 ..█....█..| ..█.. = 00100
+  ; 2 ..█....█..| ..█.. = 00100
+  ; 3 ..█....█..| ..█.. = 00100
+  ; 4 .██....██.| .██.. = 01100
+  ; 5 █..████..█|       = 0001100100001000010001100               (25 bits)
+  ; 6 .█......█.|       = 00011001000010000100011000000000        (+7 bits)
+  ; 7 ..██████..|       = 0001 1001 0000 1000 0100 0110 0000 0000 (grouped)
+  ; 8 .█......█.|       = 1    9    0    8    4    6    0    0    (hex)
+  ; 9 █........█|       = 0x19084600                              (value)
+  ; ===========================================================================
+  ;   0123456789| PIXELS (5,0) to (9,4)                     UFO TOP RIGHT GLYPH
+  ; ===========================================================================
+  ; 0 ...████...| ██... = 11000
+  ; 1 ..█....█..| ..█.. = 00100
+  ; 2 ..█....█..| ..█.. = 00100
+  ; 3 ..█....█..| ..█.. = 00100
+  ; 4 .██....██.| ..██. = 00110
+  ; 5 █..████..█|       = 1100000100001000010000110               (25 bits)
+  ; 6 .█......█.|       = 11000001000010000100001100000000        (+7 bits)
+  ; 7 ..██████..|       = 1100 0001 0000 1000 0100 0011 0000 0000 (grouped)
+  ; 8 .█......█.|       = C    1    0    8    4    3    0    0    (hex)
+  ; 9 █........█|       = 0xC1084300                              (value)
+  ; ===========================================================================
+  ;   0123456789| PIXELS (0,5) to (4,9)                   UFO BOTTOM LEFT GLYPH
+  ; ===========================================================================
+  ; 0 ...████...| █..██ = 10011
+  ; 1 ..█....█..| .█... = 01000
+  ; 2 ..█....█..| ..███ = 00111
+  ; 3 ..█....█..| .█... = 01000
+  ; 4 .██....██.| █.... = 10000
+  ; 5 █..████..█|       = 1001101000001110100010000               (25 bits)
+  ; 6 .█......█.|       = 10011010000011101000100000000000        (+7 bits)
+  ; 7 ..██████..|       = 1001 1010 0000 1110 1000 1000 0000 0000 (grouped)
+  ; 8 .█......█.|       = 9    A    0    E    8    8    0    0    (hex)
+  ; 9 █........█|       = 0x9A0E8800                              (value)
+  ; ===========================================================================
+  ;   0123456789| PIXELS (5,5) to (9,9)                  UFO BOTTOM RIGHT GLYPH
+  ; ===========================================================================
+  ; 0 ...████...| ██..█ = 11001
+  ; 1 ..█....█..| ...█. = 00010
+  ; 2 ..█....█..| ███.. = 11100
+  ; 3 ..█....█..| ...█. = 00010
+  ; 4 .██....██.| ....█ = 00001
+  ; 5 █..████..█|       = 1100100010111000001000001               (25 bits)
+  ; 6 .█......█.|       = 11001000101110000010000010000000        (+7 bits)
+  ; 7 ..██████..|       = 1100 1000 1011 1000 0010 0000 1000 0000 (grouped)
+  ; 8 .█......█.|       = C    8    B    8    2    0    8    0    (hex)
+  ; 9 █........█|       = 0xC8B82080                              (value)
+  ; ===========================================================================
+
+  ; Load the four 5x5 glyph bitmaps into registers
+  MV RA 0x19084600  ; Top-Left glyph data
+  MV RB 0xC1084300  ; Top-Right glyph data
+  MV RC 0x9A0E8800  ; Bottom-Left glyph data
+  MV RD 0xC8B82080  ; Bottom-Right glyph data
+
+  ; Write glyphs to the default glyph buffer starting at address 0x0200
+  MV.w RF 0x0200    ; Set pointer to character slot 0
+  SN [RF] RA        ; Store Top-Left glyph
+  AI.b RF 0x04      ; Advance to next character slot
+  SN [RF] RB        ; Store Top-Right glyph
+  AI.b RF 0x04      ; Advance to next character slot
+  SN [RF] RC        ; Store Bottom-Left glyph
+  AI.b RF 0x04      ; Advance to next character slot
+  SN [RF] RD        ; Store Bottom-Right glyph
+
+  ; ---------------------------------------------------------------------------
+  ; SET UP SPRITE 0 ATTRIBUTES
+  ; ---------------------------------------------------------------------------
+  ; Set scale to 2 (2x2 matrix of glyphs = 10x10 pixels)
+  ; Bit 4 of the attribute byte controls scale
+  MV.b RA 0x10     ; Set bit 4 (0x10) for Scale 2
+  ST.b [0x0884] RA ; Write to Sprite 0 Attribute register
+
+  ; ---------------------------------------------------------------------------
+  ; SET UP SPRITE 0 LAYERS
+  ; ---------------------------------------------------------------------------
+  ; Enable the first layer for Sprite 0
+  MV.b RA 0x10   ; Set bit 4 to enable Layer 1
+  ST.b [0xC0] RA ; Write to Sprite 0 Layer Enable register
+
+  ; ---------------------------------------------------------------------------
+  ; SET UP SPRITE 0 LAYER COLORS
+  ; ---------------------------------------------------------------------------
+  ; Assign color index 9 (Red) to Layer 1
+  MV.w RA 0x0009   ; Color index 0x09 = Red
+  ST.w [0x08A4] RA ; Write to Sprite 0 Layer Color register
+
+  ; ---------------------------------------------------------------------------
+  ; BUILD SPRITE 0 GRAPHICS MATRIX
+  ; ---------------------------------------------------------------------------
+  ; Map the custom glyphs to the 4x4 sprite matrix grid:
+  ;
+  ;   0 1 2 3
+  ;   4 5 6 7
+  ;   8 9 A B
+  ;   C D E F
+  
+  ; We use cells 0, 1, 4, and 5 to form a 2x2 block.
+  ; Cell 0 = Glyph 0 (TL), Cell 1 = Glyph 1 (TR)
+  ; Cell 4 = Glyph 2 (BL), Cell 5 = Glyph 3 (BR)
+  ; Remaining cells set to 0xFF (transparent/empty)
+
+  ; Load the glyph assignments into registers
+  MV RA 0xFFFF0100 ; Cells 0=0, 1=1, others=FF
+  MV RB 0xFFFF0302 ; Cells 4=2, 5=3, others=FF
+  MV RC 0xFFFFFFFF ; Cells 8-B = FF
+  MV RD 0xFFFFFFFF ; Cells C-F = FF
+
+  ; Write the sprite graphics matrix
+  ST [0x08E4] RA   ; Write first row of matrix
+  ST [0x08E8] RB   ; Write second row of matrix
+  ST [0x08EC] RC   ; Write third row of matrix
+  ST [0x08F0] RD   ; Write fourth row of matrix
+
+  ; ---------------------------------------------------------------------------
+  ; ENABLE SPRITE 0
+  ; ---------------------------------------------------------------------------
+  MV RA 0x1   ; set bit 0
+  ST [0x5] RA ; enable sprite 0
+
+  ; ---------------------------------------------------------------------------
+  ; SET SPRITE 0 SCREEN COORDINATES
+  ; ---------------------------------------------------------------------------
+  ; The first 16-bit word in the sprite data buffer holds the coordinates of
+  ; sprite 0. The coordinates are relative to center of the screen.
+  ; We want to center the sprite and the sprite origin is the top-left corner 
+  ; of the sprite graphics matrix.
+  ; The sprite we want is 10x10 pixels
+  ; so we want X = -5
+  ; positive 5                 = 00000101
+  ; one's complement           = 11111010
+  ; add 1 for two's complement = 11111011
+  ; 1111 1011
+  ; F    B
+  ; same for Y since we want Y = -5 as well
+  MV.w RA 0xFBFB   ; (-5, -5)
+  ST.w [0x0824] RA ; set sprite 0 coordinate
+
+; -----------------------------------------------------------------------------
+; INFINITE LOOP WAITING FOR FIRE1 BUTTON
+; -----------------------------------------------------------------------------
+check_fire1:
+  WF                ; wait for frame to render
+  LD.b RF [0x03]    ; put player1 input state into RF
+  MV.b RC 0x20      ; fire1 button mask
+  ND RF RF RC       ; apply mask
+  EJ end RF RC      ; if we got a match we go to end
+  UJ check_fire1    ; go back to check again
+; -----------------------------------------------------------------------------
+; END OF PROGRAM
+; -----------------------------------------------------------------------------
+end:
+  HE                ; halt cpu
