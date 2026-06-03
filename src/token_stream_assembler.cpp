@@ -22,14 +22,14 @@ m9::TokenStreamAssembler::TokenStreamAssembler(const std::vector<Token> &raw_tok
   }
   token_stream = std::make_unique<TokenStream>(raw_token_stream);
 
-  std::cerr << "*** PASS 1 (LABELS AND DIRECTIVES) ***" << std::endl;
+  std::cerr << "\n*** PASS 1 (LABELS AND DIRECTIVES) ***" << std::endl;
 
   // first pass to handle directives and labels
   pass = Pass::Pass1;
   token_stream->Reset();
   ExecutePass();
 
-  std::cerr << "*** PASS 2 (CODE GENERATION) ***" << std::endl;
+  std::cerr << "\n*** PASS 2 (CODE GENERATION) ***" << std::endl;
 
   // second pass
   pass = Pass::Pass2;
@@ -81,6 +81,7 @@ void m9::TokenStreamAssembler::Emit32(const uint32_t value)
 
 void m9::TokenStreamAssembler::EmitTypeO(const OpCode op_code)
 {
+  std::cerr << "EmitTypeO" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   instruction_count++;
 }
@@ -88,6 +89,7 @@ void m9::TokenStreamAssembler::EmitTypeO(const OpCode op_code)
 void m9::TokenStreamAssembler::EmitTypeOSRA(const OpCode op_code, const uint8_t sz, const uint8_t reg,
                                             const uint16_t address)
 {
+  std::cerr << "EmitTypeOSRA" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(sz);
   Emit8(reg);
@@ -98,6 +100,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRA(const OpCode op_code, const uint8_t 
 void m9::TokenStreamAssembler::EmitTypeOSAR(const OpCode op_code, const uint8_t sz, const uint16_t address,
                                             const uint8_t reg)
 {
+  std::cerr << "EmitTypeOSAR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(sz);
   Emit16(address);
@@ -107,6 +110,7 @@ void m9::TokenStreamAssembler::EmitTypeOSAR(const OpCode op_code, const uint8_t 
 
 void m9::TokenStreamAssembler::EmitTypeOSRI1(const OpCode op_code, const uint8_t reg, const uint8_t imm)
 {
+  std::cerr << "EmitTypeOSRI1" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(1);
   Emit8(reg);
@@ -116,6 +120,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI1(const OpCode op_code, const uint8_t
 
 void m9::TokenStreamAssembler::EmitTypeOSRI2(const OpCode op_code, const uint8_t reg, const uint16_t imm)
 {
+  std::cerr << "EmitTypeOSRI2" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(2);
   Emit8(reg);
@@ -125,6 +130,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI2(const OpCode op_code, const uint8_t
 
 void m9::TokenStreamAssembler::EmitTypeOSRI4(const OpCode op_code, const uint8_t reg, const uint32_t imm)
 {
+  std::cerr << "EmitTypeOSRI4" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(4);
   Emit8(reg);
@@ -135,6 +141,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRI4(const OpCode op_code, const uint8_t
 void m9::TokenStreamAssembler::EmitTypeOSRR(const OpCode op_code, const uint8_t sz, const uint8_t reg_a,
                                             const uint8_t reg_b)
 {
+  std::cerr << "EmitTypeOSRR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(sz);
   Emit8(reg_a);
@@ -144,6 +151,7 @@ void m9::TokenStreamAssembler::EmitTypeOSRR(const OpCode op_code, const uint8_t 
 
 void m9::TokenStreamAssembler::EmitTypeOSR(const OpCode op_code, const uint8_t sz, const uint8_t reg)
 {
+  std::cerr << "EmitTypeOSR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(sz);
   Emit8(reg);
@@ -152,6 +160,7 @@ void m9::TokenStreamAssembler::EmitTypeOSR(const OpCode op_code, const uint8_t s
 
 void m9::TokenStreamAssembler::EmitTypeORR(const OpCode op_code, const uint8_t reg_a, const uint8_t reg_b)
 {
+  std::cerr << "EmitTypeORR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg_a);
   Emit8(reg_b);
@@ -160,6 +169,7 @@ void m9::TokenStreamAssembler::EmitTypeORR(const OpCode op_code, const uint8_t r
 
 void m9::TokenStreamAssembler::EmitTypeOA(const OpCode op_code, const uint16_t address)
 {
+  std::cerr << "EmitTypeOA" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit16(address);
   instruction_count++;
@@ -167,6 +177,7 @@ void m9::TokenStreamAssembler::EmitTypeOA(const OpCode op_code, const uint16_t a
 
 void m9::TokenStreamAssembler::EmitTypeOAR(const OpCode op_code, const uint16_t address, const uint8_t reg)
 {
+  std::cerr << "EmitTypeOAR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit16(address);
   Emit8(reg);
@@ -176,6 +187,7 @@ void m9::TokenStreamAssembler::EmitTypeOAR(const OpCode op_code, const uint16_t 
 void m9::TokenStreamAssembler::EmitTypeOARR(const OpCode op_code, const uint16_t address, const uint8_t reg_a,
                                             const uint8_t reg_b)
 {
+  std::cerr << "EmitTypeOARR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit16(address);
   Emit8(reg_a);
@@ -186,6 +198,7 @@ void m9::TokenStreamAssembler::EmitTypeOARR(const OpCode op_code, const uint16_t
 void m9::TokenStreamAssembler::EmitTypeORRR(const OpCode op_code, const uint8_t reg_a, const uint8_t reg_b,
                                             const uint8_t reg_c)
 {
+  std::cerr << "EmitTypeORRR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg_a);
   Emit8(reg_b);
@@ -195,6 +208,7 @@ void m9::TokenStreamAssembler::EmitTypeORRR(const OpCode op_code, const uint8_t 
 
 void m9::TokenStreamAssembler::EmitTypeORC(const OpCode op_code, const uint8_t reg, const uint8_t count)
 {
+  std::cerr << "EmitTypeORC" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
   Emit8(count);
@@ -203,6 +217,7 @@ void m9::TokenStreamAssembler::EmitTypeORC(const OpCode op_code, const uint8_t r
 
 void m9::TokenStreamAssembler::EmitTypeOR(const OpCode op_code, const uint8_t reg)
 {
+  std::cerr << "EmitTypeOR" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
   instruction_count++;
@@ -210,6 +225,7 @@ void m9::TokenStreamAssembler::EmitTypeOR(const OpCode op_code, const uint8_t re
 
 void m9::TokenStreamAssembler::EmitTypeORD(const OpCode op_code, const uint8_t reg, const SignExtendSourceBpp sx_bpp)
 {
+  std::cerr << "EmitTypeORD" << std::endl;
   Emit8(static_cast<uint8_t>(op_code));
   Emit8(reg);
   Emit8(static_cast<uint8_t>(sx_bpp));
@@ -887,7 +903,7 @@ void m9::TokenStreamAssembler::HandleToken(const Token &current_token)
     {
       memory_consumed = 0;
     }
-    std::cerr << std::format("---         : Tokens consumed: {} Bytes of memory consumed: {}", tokens_consumed, memory_consumed) << std::endl;
+    std::cerr << std::format("--- : Tokens consumed: ({})  Bytes of memory consumed: ({})", tokens_consumed, memory_consumed) << std::endl;
   }
     break;
   case TokenType::LABEL:
