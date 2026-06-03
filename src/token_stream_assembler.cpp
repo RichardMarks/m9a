@@ -915,7 +915,7 @@ void m9::TokenStreamAssembler::ExecutePass()
 {
   program_counter = start_address;
   const auto stream_size = token_stream->GetSize();
-  for (auto i = 0ull; i < stream_size; i++)
+  for (auto i = 0ull; i <= stream_size; i++)
   {
     if (token_stream->GetOffset() >= token_stream->GetSize())
     {
