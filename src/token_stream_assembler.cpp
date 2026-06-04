@@ -385,18 +385,35 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
       }
     },
     {
-    "fill", [&]()
-    {
-      auto from_address = program_counter;
-      const auto count = GetImmediateOperand();
-      const auto value = GetImmediateOperand();
-      for (auto i = 0; i < count; i++)
+      "fill", [&]()
       {
-        Emit8(value & 0xFF);
+        const auto from_address = program_counter;
+        const auto count = GetImmediateOperand();
+        const auto value = GetImmediateOperand();
+
+        auto sz = "Byte";
+        std::function EmissionFn{[this, value](){ Emit8(static_cast<uint8_t>(value)); }};
+
+        if (value > 0xFFFF)
+        {
+          sz = "32-bit DWord";
+          EmissionFn = [this, value](){ Emit32(value); };
+        } else if (value > 0xFF)
+        {
+          sz = "16-bit Word";
+          EmissionFn = [this, value](){ Emit16(static_cast<uint16_t>(value)); };
+        }
+
+        for (auto i = 0; i < count; i++)
+        {
+          EmissionFn();
+        }
+
+        const auto to_address = program_counter;
+
+        std::cerr << std::format("--- FILL DIRECTIVE: INSERT {} of (0x{:08X}) {}{} from 0x{:04X} to 0x{:04X}\n", count, value, sz, (count == 1 ? "" : "s"), from_address, to_address);
       }
-      auto to_address = program_counter;
-      std::cerr << std::format("--- FILL DIRECTIVE: INSERT {} of (0x{:02X}) Byte{} from 0x{:04X} to 0x{:04X}", count, value & 0xFF, (count == 1 ? "" : "s"), from_address, to_address) << std::endl;
-    }}
+    }
   };
 
   const auto Handler = handlers.contains(directive) ? handlers.at(directive) : nullptr;
