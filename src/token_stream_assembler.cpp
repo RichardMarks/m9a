@@ -353,6 +353,18 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
 
   std::cerr << "--- DIRECTIVE: " << directive << std::endl;
 
+  const auto Reserve = [&](const char *sz, const std::function<void()> &EmissionFn)
+  {
+    const auto from_address = program_counter;
+    const auto count = GetImmediateOperand();
+    for (auto i = 0; i < count; i++)
+    {
+      EmissionFn();
+    }
+    const auto to_address = program_counter;
+    std::cerr << std::format("--- RESERVE DIRECTIVE: INSERT {} of {}{} from 0x{:04X} to 0x{:04X}\n", count, sz, (count == 1 ? "" : "s"), from_address, to_address);
+  };
+
   const std::unordered_map<std::string, std::function<void()> > handlers{
     {
       "start", [&]()
@@ -413,7 +425,19 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
 
         std::cerr << std::format("--- FILL DIRECTIVE: INSERT {} of (0x{:08X}) {}{} from 0x{:04X} to 0x{:04X}\n", count, value, sz, (count == 1 ? "" : "s"), from_address, to_address);
       }
-    }
+    },
+    {"resb", [&]()
+    {
+      Reserve("Byte", [this](){ Emit8(0); });
+    }},
+    {"resw", [&]()
+    {
+      Reserve("16-bit Word", [this](){ Emit16(0); });
+    }},
+    {"resd", [&]()
+    {
+      Reserve("32-bit DWord", [this](){ Emit32(0); });
+    }},
   };
 
   const auto Handler = handlers.contains(directive) ? handlers.at(directive) : nullptr;
