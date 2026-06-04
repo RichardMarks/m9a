@@ -383,7 +383,20 @@ void m9::TokenStreamAssembler::HandleDirective(const Token &current_token)
         auto to_address = program_counter;
         std::cerr << std::format("--- BYTE DIRECTIVE: INSERT {} Byte{} from 0x{:04X} to 0x{:04X}", count,(count == 1 ? "" : "s"), from_address, to_address) << std::endl;
       }
-    }
+    },
+    {
+    "fill", [&]()
+    {
+      auto from_address = program_counter;
+      const auto count = GetImmediateOperand();
+      const auto value = GetImmediateOperand();
+      for (auto i = 0; i < count; i++)
+      {
+        Emit8(value & 0xFF);
+      }
+      auto to_address = program_counter;
+      std::cerr << std::format("--- FILL DIRECTIVE: INSERT {} of (0x{:02X}) Byte{} from 0x{:04X} to 0x{:04X}", count, value & 0xFF, (count == 1 ? "" : "s"), from_address, to_address) << std::endl;
+    }}
   };
 
   const auto Handler = handlers.contains(directive) ? handlers.at(directive) : nullptr;
