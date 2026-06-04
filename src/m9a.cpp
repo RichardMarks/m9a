@@ -21,6 +21,8 @@
 #include "token_stream_assembler.h"
 #include "m9a.h"
 
+#include <algorithm>
+
 namespace m9
 {
   struct Assembler
@@ -33,6 +35,26 @@ namespace m9
         const auto lost = Rom::MAX_DATA_SIZE_IN_BYTES - tsa.bytes.size();
         const auto msg = std::format("Assembled binary will not fit in Rom data. '{}' bytes will be lost.", lost);
         throw std::runtime_error(msg);
+      }
+
+      if (!tsa.label_addresses.empty())
+      {
+        std::cerr << std::format("\nLABEL ADDRESS REFERENCE TABLE CONTAINS {} ENTR{}\n", tsa.label_addresses.size(), tsa.label_addresses.size() == 1 ? "Y" : "IES");
+
+        // 1. copy the map elements into a vector of pairs
+        std::vector<std::pair<std::string, uint16_t> > sorted_labels(
+          tsa.label_addresses.begin(),
+          tsa.label_addresses.end());
+
+        // 2. sort by address ascending
+        std::ranges::sort(sorted_labels, {}, &std::pair<std::string, uint16_t>::second);
+
+        // 3. print the sorted elements
+        for (const auto &[label, address]: sorted_labels)
+        {
+          std::cerr << std::format("| {:64} @ 0x{:04X} |\n", label, address);
+        }
+        std::cerr << '\n';
       }
       std::cerr << "\nASSEMBLY COMPLETE" << std::endl;
       std::cerr << std::format("--- Assembled Rom Contains {} Instructions", tsa.instruction_count) << std::endl;
